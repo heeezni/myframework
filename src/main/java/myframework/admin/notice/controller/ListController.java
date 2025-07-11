@@ -20,12 +20,12 @@ public class ListController implements Controller {
 
 	@Override
 	public String getViewName() {
-		return null;
+		return "/admin/notice/list/view";
 	}
-
+	
 	@Override
 	public boolean isForward() {
-		return false;
+		return true;
 	}
 
 }
