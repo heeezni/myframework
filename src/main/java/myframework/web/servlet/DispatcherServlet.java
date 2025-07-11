@@ -14,6 +14,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import lombok.extern.slf4j.Slf4j;
+import myframework.web.handler.HandlerMapping;
 
 /**
  * 웹 애플리케이션의 모든 요청을 1차적으로 처리하는 전면 컨트롤러 (관제탑)
@@ -43,6 +44,13 @@ public class DispatcherServlet extends HttpServlet {
 
 			String mappingType = root.get("mappingType").getAsString();
 			log.debug("우리가 사용할 핸들러 매핑은 " + mappingType);
+			
+			// 동작할 HandlerMapping이 누구인지는 모르지만, 그 패키지를 포함한 클래스명이 mappingType에 들어있으므로,
+			// 스트링을 이용한 클래스 로드를 수행할 수 있는 Class.forName()
+			Class cls=Class.forName(mappingType);
+			HandlerMapping handlerMapping=(HandlerMapping)cls.newInstance();
+			handlerMapping.setRoot(root);
+			handlerMapping.initialize();
 
 		} catch (Exception e) {
 

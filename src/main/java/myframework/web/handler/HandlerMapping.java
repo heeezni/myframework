@@ -2,6 +2,8 @@ package myframework.web.handler;
 
 import com.google.gson.JsonObject;
 
+import myframework.web.servlet.Controller;
+
 /**
  * 모든 핸들러 매핑 객체들의 최상위 객체를 정의하여 구현을 강제하자!
  * DispatcherServlet이 의존함 
