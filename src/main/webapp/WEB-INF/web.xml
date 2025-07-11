@@ -35,7 +35,7 @@
 	
 
 	<!-- shop으로 들어오는 모든 요청은 여기서 처리 (user) -->
-		<!--  <servlet>
+	<servlet>
 		<servlet-name>userDispatcher</servlet-name>
 		<servlet-class>myframework.web.servlet.DispatcherServlet</servlet-class>
 		<init-param>
@@ -46,6 +46,6 @@
 	<servlet-mapping>
 		<servlet-name>userDispatcher</servlet-name>
 		<url-pattern>/shop/*</url-pattern>
-	</servlet-mapping> -->
+	</servlet-mapping>
 
 </web-app>
