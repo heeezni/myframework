@@ -2,20 +2,18 @@
 	"mappingType":"myframework.web.handler.SimpleUrlHandlerMapping",
 	
 	"controllerMappings":{
-		"/shop/notice/list": "myframework.shop.notice.controller.ListController",
-		"/shop/notice/write": "myframework.shop.notice.controller.WriteController",
-		"/shop/notice/detail": "myframework.shop.notice.controller.DetailController",
-		"/shop/notice/edit": "myframework.shop.notice.controller.EditController",
-		"/shop/notice/delete": "myframework.shop.notice.controller.DeleteController"
+		"/admin/notice/list": "myframework.admin.notice.controller.ListController",
+		"/admin/notice/write": "myframework.admin.notice.controller.WriteController",
+		"/admin/notice/detail": "myframework.admin.notice.controller.DetailController",
+		"/admin/notice/edit": "myframework.admin.notice.controller.EditController",
+		"/admin/notice/delete": "myframework.admin.notice.controller.DeleteController"
 	},
 	
 	"viewMappings":{
-		"/shop/notice/list/view":"/shop/notice/list.jsp",
-		"/shop/notice/write/view":"/shop/notice/list",
-		"/shop/notice/detail/view":"/shop/notice/content.jsp",
-		"/shop/notice/edit/view":"/shop/notice/detail.jsp",
-		"/shop/notice/delete/view":"/shop/notice/list"
-	
+		"/admin/notice/list/view":"/admin/notice/list.jsp",
+		"/admin/notice/write/view":"/admin/notice/list",
+		"/admin/notice/detail/view":"/admin/notice/content.jsp",
+		"/admin/notice/edit/view":"/admin/notice/detail.jsp",
+		"/admin/notice/delete/view":"/admin/notice/list"
 	}
-
 }

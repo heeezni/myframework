@@ -4,6 +4,21 @@
 
 	<!-- 웹사이트의 요청을 관리자와 일반유저의 요청으로 분기 (-> DispatcherServlet이 두개로 구분) -->
 	
+	<!-- 필터 매핑 -->
+	<filter>
+		<filter-name>encodingFilter</filter-name>
+		<filter-class>myframework.web.util.CharacterEncodingFilter</filter-class>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>UTF-8</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>encodingFilter</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	
+	
 	<!-- secure로 들어오는 모든 요청은 여기서 처리(admin) -->
 	<servlet>
 		<servlet-name>adminDispatcher</servlet-name>
@@ -18,8 +33,9 @@
 		<url-pattern>/secure/*</url-pattern>
 	</servlet-mapping>
 	
+
 	<!-- shop으로 들어오는 모든 요청은 여기서 처리 (user) -->
-	<servlet>
+		<!--  <servlet>
 		<servlet-name>userDispatcher</servlet-name>
 		<servlet-class>myframework.web.servlet.DispatcherServlet</servlet-class>
 		<init-param>
@@ -30,6 +46,6 @@
 	<servlet-mapping>
 		<servlet-name>userDispatcher</servlet-name>
 		<url-pattern>/shop/*</url-pattern>
-	</servlet-mapping>
+	</servlet-mapping> -->
 
 </web-app>
