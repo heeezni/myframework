@@ -19,7 +19,7 @@
 	</filter-mapping>
 	
 	
-	<!-- secure로 들어오는 모든 요청은 여기서 처리(admin) -->
+	<!-- admin으로 들어오는 모든 요청은 여기서 처리(admin) -->
 	<servlet>
 		<servlet-name>adminDispatcher</servlet-name>
 		<servlet-class>myframework.web.servlet.DispatcherServlet</servlet-class>
@@ -30,7 +30,7 @@
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>adminDispatcher</servlet-name>
-		<url-pattern>/secure/*</url-pattern>
+		<url-pattern>/admin/*</url-pattern>
 	</servlet-mapping>
 	
 

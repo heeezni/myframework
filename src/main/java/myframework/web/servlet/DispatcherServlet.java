@@ -22,6 +22,8 @@ import myframework.web.handler.HandlerMapping;
 @Slf4j
 public class DispatcherServlet extends HttpServlet {
 
+	HandlerMapping handlerMapping; // 이 핸들러에 동생 인스턴스들이 uri키 값을 가지고 모여있다.
+	
 	/**
 	 * 이 서블릿이 초기화 될 때, 매핑 파일에 등록된 컨트롤러들만 인스턴스를 생성하여 모아야 하는데, 이 서블릿이 직접하지 않고, 개발자가
 	 * 등록한 핸들러 매핑에게 맡김 + 추후 요청 처리할 때도, 어떤 하위 컨트롤러가 동작해야 하는지도 핸들러 매핑이 알아서 분석하여 이
@@ -48,7 +50,7 @@ public class DispatcherServlet extends HttpServlet {
 			// 동작할 HandlerMapping이 누구인지는 모르지만, 그 패키지를 포함한 클래스명이 mappingType에 들어있으므로,
 			// 스트링을 이용한 클래스 로드를 수행할 수 있는 Class.forName()
 			Class cls=Class.forName(mappingType);
-			HandlerMapping handlerMapping=(HandlerMapping)cls.newInstance();
+			handlerMapping=(HandlerMapping)cls.newInstance();
 			handlerMapping.setRoot(root);
 			handlerMapping.initialize();
 
@@ -73,6 +75,11 @@ public class DispatcherServlet extends HttpServlet {
 
 	protected void doRequest(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+		// 해당 요청을 처리
+		String uri=request.getRequestURI();
+		Controller controller=handlerMapping.getController(uri);
+		
+		controller.execute(request, response); // 다형성으로 동작했음
 
 	}
 
