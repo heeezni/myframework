@@ -51,15 +51,11 @@ public class SimpleUrlHandlerMapping implements HandlerMapping {
 				Controller controller = (Controller)Class.forName(controllerName).newInstance();
 				controllerMap.put(uri, controller);
 				
-				
 			} catch (InstantiationException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (IllegalAccessException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
