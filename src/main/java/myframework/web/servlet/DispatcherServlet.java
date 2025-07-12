@@ -3,6 +3,8 @@ package myframework.web.servlet;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Enumeration;
+import java.util.Map;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
@@ -36,6 +38,7 @@ public class DispatcherServlet extends HttpServlet {
 	 */
 	@Override
 	public void init(ServletConfig config) throws ServletException {
+		log.info("DispatcherServlet initializing..."); // 초기화 시작 로그 추가
 		// 초기화 파라미터 읽기 (설정파일의 위치 얻기)
 		String contextConfigLocation = config.getInitParameter("contextConfigLocation");
 		// 현재 애플리케이션의 정보 얻기
@@ -56,9 +59,11 @@ public class DispatcherServlet extends HttpServlet {
 			handlerMapping = (HandlerMapping) cls.newInstance();
 			handlerMapping.setRoot(root);
 			handlerMapping.initialize();
+			log.info("DispatcherServlet initialized successfully."); // 초기화 성공 로그 추가
 
 		} catch (Exception e) {
-			e.getStackTrace();
+			log.error("Error during DispatcherServlet initialization", e); // 초기화 실패 로그 추가
+			throw new ServletException("Failed to initialize DispatcherServlet", e); // 예외 다시 던지기
 		}
 
 	}
@@ -78,15 +83,34 @@ public class DispatcherServlet extends HttpServlet {
 
 	protected void doRequest(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
+		log.debug("doRequest method called."); // doRequest 진입 로그 추가
 		// 해당 요청을 처리
 		String uri = request.getRequestURI();
 		Controller controller = handlerMapping.getController(uri);
 		
-		log.debug("요청 uri "+uri);
-		log.debug("controller is "+controller);
+		log.debug("요청 uri " + uri);
+		log.debug("controller is " + controller);
+		log.debug("Request object type: {}", request.getClass().getName()); // request 객체 타입 로그 추가
 
-		
-		controller.execute(request, response); // 다형성으로 동작했음
+		// 모든 파라미터 이름과 값 출력 (getParameterMap 사용)
+		Map<String, String[]> parameterMap = request.getParameterMap();
+		for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+			String paramName = entry.getKey();
+			String[] paramValues = entry.getValue();
+			for (String paramValue : paramValues) {
+				log.debug("Parameter Map - {}: {}", paramName, paramValue);
+			}
+		}
+
+
+		if (controller != null) {
+			log.debug("Executing controller: {}", controller.getClass().getName());
+			controller.execute(request, response); // 다형성으로 동작했음
+		} else {
+			log.warn("No controller found for URI: {}", uri);
+			response.sendError(HttpServletResponse.SC_NOT_FOUND, "No controller found for " + uri);
+			return;
+		}
 
 		// 하위 컨트롤러로부터 반환받은 view의 이름을 가지고,
 		JsonObject viewMappings = root.getAsJsonObject("viewMappings");

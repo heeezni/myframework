@@ -10,9 +10,11 @@
 <script type="text/javascript">
 	function regist(){
 		$("form").attr({
-			action:"/shop/staff/regist"
+			action:"/shop/staff/regist",
+			method:"post"
 		
 		});
+		$("form").submit();
 	}
 
 	$(()=>{
