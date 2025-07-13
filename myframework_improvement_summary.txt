@@ -1,0 +1,69 @@
+# MyFramework 개발 회고 및 개선점 정리
+
+## 1. 개요
+
+Spring Framework의 핵심 원리를 학습하고 직접 구현해보는 `MyFramework` 프로젝트를 진행했습니다. 초기 버전은 기본적인 MVC 패턴을 구현했지만, 운영 및 확장성 측면에서 여러 문제점을 발견했습니다. 이 문서는 해당 문제점들을 어떻게 파악하고 개선했는지, 그 과정과 최종 구조의 흐름을 정리하기 위해 작성되었습니다.
+
+---
+
+## 2. 발견된 문제점 및 해결 방안
+
+### 문제 1) 요청마다 Controller 인스턴스 생성으로 인한 비효율
+
+- **문제점:** 초기 버전에서는 사용자의 요청이 들어올 때마다 `HandlerMapping`이 해당 URL에 매핑된 컨트롤러 클래스 이름을 `.properties` 파일에서 찾아 리플렉션을 통해 **매번 새로운 인스턴스를 생성**했습니다. 이는 잦은 GC를 유발하고 메모리 낭비가 심해 성능 저하의 직접적인 원인이 되었습니다.
+
+- **해결 방안:** Spring Framework처럼 **컨트롤러를 싱글톤(Singleton)으로 관리**하기로 결정했습니다. 프레임워크가 시작되는 시점(Servlet 초기화)에 모든 컨트롤러의 인스턴스를 미리 생성하여 `Map`과 같은 저장소에 보관하고, 요청이 들어오면 이미 생성된 인스턴스를 찾아 재사용하는 방식으로 변경했습니다.
+
+- **구현 흐름:**
+    1. `DispatcherServlet`의 `init()` 메서드가 서블릿 컨테이너에 의해 최초 1회 호출됩니다.
+    2. `init()` 메서드 내에서 `HandlerMapping` 객체를 생성하고, `HandlerMapping`의 `init()` 메서드를 호출합니다.
+    3. `HandlerMapping`의 `init()` 메서드는 설정 파일(JSON)을 읽어 매핑 정보를 파악합니다.
+    4. 설정 파일에 등록된 모든 컨트롤러 클래스를 리플렉션으로 인스턴스화하여 `Map<String, Controller>` 형태의 컬렉션에 (URL, 컨트롤러 인스턴스) 쌍으로 저장합니다.
+    5. 이후 요청이 들어오면 `DispatcherServlet`은 `HandlerMapping`의 `getHandler()` 메서드를 호출하여 `Map`에서 URL을 key로 해당 컨트롤러 인스턴스를 꺼내 사용합니다. 더 이상 새로운 인스턴스는 생성되지 않습니다.
+
+---
+
+### 문제 2) `.properties` 설정 파일의 구조적 한계
+
+- **문제점:** `.properties` 파일은 단순한 `key=value` 형태라 구조적인 정보를 표현하기 어렵습니다. 예를 들어, URL과 컨트롤러 클래스를 매핑하는 정보 외에, View Resolver 정보나 Interceptor 설정 등 복합적인 데이터를 추가하려면 별도의 파일을 만들거나 key 이름 규칙을 복잡하게 가져가야 하는 문제가 있었습니다.
+
+- **해결 방안:** 계층 구조를 표현하는 데 용이한 **JSON 형식**으로 설정 파일을 변경했습니다. Google의 `Gson` 라이브러리를 사용하여 JSON 파일을 파싱하고, 이를 통해 보다 유연하고 확장성 있는 설정 관리가 가능해졌습니다.
+
+- **구현 흐름:**
+    1. `pom.xml`에 `Gson` 라이브러리 의존성을 추가합니다.
+    2. 기존 `admin-servlet.properties`, `user-servlet.properties` 파일을 각각 `admin-servlet.json`, `user-servlet.json`으로 변경합니다.
+    3. JSON 파일 내에 `{ "url": "/some/url", "className": "com.my.controller.SomeController" }` 와 같은 객체 배열이나, `"url": "className"` 형태의 단순 객체로 매핑 정보를 정의합니다.
+    4. `HandlerMapping`의 `init()` 메서드에서 `FileReader`로 JSON 파일을 읽고, `Gson`을 이용해 `Map` 또는 자바 객체로 변환하여 컨트롤러 매핑 정보를 로드합니다.
+
+---
+
+### 문제 3) 단일 DispatcherServlet으로 인한 역할 분리의 어려움
+
+- **문제점:** 모든 `*.do` 요청을 하나의 `DispatcherServlet`이 처리하도록 `web.xml`에 설정하면, 관리자 페이지(`/admin/*`)와 사용자 페이지(`/user/*`)의 공통 기능(인증, 레이아웃 등)을 분리하기가 까다로워집니다. 예를 들어, 관리자 페이지에만 적용하고 싶은 필터나 인터셉터 로직을 `DispatcherServlet` 내에서 `if-else`로 분기 처리해야 했습니다.
+
+- **해결 방안:** **`DispatcherServlet`을 2개 등록**하여 역할에 따라 분리했습니다. `web.xml`에서 URL 패턴(`/admin/*`, `/user/*`)에 따라 각각 다른 `DispatcherServlet` 인스턴스(`adminDispatcher`, `userDispatcher`)가 처리하도록 매핑했습니다. 각 `DispatcherServlet`은 자신만의 설정 파일(e.g., `admin-servlet.json`)을 가지므로, 서로에게 영향을 주지 않고 독립적인 구성이 가능해졌습니다.
+
+- **구현 흐름:**
+    1. `web.xml`에 `<servlet>` 태그를 2개 정의합니다. 두 서블릿 모두 `myframework.web.servlet.DispatcherServlet` 클래스를 사용하지만, `<servlet-name>`을 `adminDispatcher`, `userDispatcher`로 다르게 지정합니다.
+    2. 각 `<servlet>` 정의에 `<init-param>`을 사용하여 로드할 설정 파일의 경로(`contextConfigLocation`)를 각각 `admin-servlet.json`, `user-servlet.json`으로 지정합니다.
+    3. `<servlet-mapping>` 태그를 2개 정의하여, `/admin/*` 요청은 `adminDispatcher`로, `/user/*` 요청은 `userDispatcher`로 전달되도록 설정합니다.
+    4. 이제 서블릿 컨테이너는 2개의 `DispatcherServlet` 인스턴스를 생성하며, 각 인스턴스는 독립된 `HandlerMapping`과 컨트롤러 인스턴스 `Map`을 갖게 됩니다.
+
+---
+
+## 3. 개선 후 전체 요청 처리 흐름
+
+1.  사용자가 브라우저에 `/admin/notice/list.do`를 요청합니다.
+2.  서블릿 컨테이너(Tomcat)는 `web.xml`의 `<servlet-mapping>`을 보고 `/admin/*` 패턴과 일치하는 `adminDispatcher` 서블릿에 요청을 전달합니다.
+3.  `adminDispatcher`(`DispatcherServlet` 인스턴스)는 이미 초기화 과정에서 `admin-servlet.json` 파일을 읽어 모든 관리자용 컨트롤러를 생성하고 `HandlerMapping` 내의 `Map`에 저장해 둔 상태입니다.
+4.  `DispatcherServlet`은 `HandlerMapping`에게 요청 URL(`/admin/notice/list.do`)에 해당하는 컨트롤러를 요청합니다.
+5.  `HandlerMapping`은 `Map`에서 해당 URL을 key로 하여 미리 생성해 둔 `ListController` 인스턴스를 찾아 반환합니다.
+6.  `DispatcherServlet`은 `ListController`의 `execute()` 메서드를 호출하여 비즈니스 로직을 수행시킵니다.
+7.  `ListController`는 로직 수행 후, 뷰(JSP)의 이름을 담은 `String`을 반환합니다. (e.g., `"/secure/notice/list"`)
+8.  `DispatcherServlet`은 `ViewResolver`(또는 이에 준하는 내부 로직)를 통해 뷰 이름에 접두사(`/`)와 접미사(`.jsp`)를 붙여 `/secure/notice/list.jsp` 라는 최종 경로를 만들어냅니다.
+9.  `DispatcherServlet`은 `request.getRequestDispatcher()`를 이용해 해당 JSP로 요청을 `forward` 시킵니다.
+10. JSP가 렌더링되어 사용자에게 최종 응답(HTML)이 전달됩니다.
+
+## 4. 결론
+
+위와 같은 개선 작업을 통해 `MyFramework`는 초기 버전에 비해 **성능, 유지보수성, 확장성** 측면에서 크게 향상되었습니다. 특히 컨트롤러를 싱글톤으로 관리함으로써 얻는 성능상의 이점과, 역할에 따라 `DispatcherServlet`을 분리하여 얻는 구조적인 유연함은 Spring Framework가 왜 그렇게 설계되었는지 깊이 이해하는 계기가 되었습니다.
